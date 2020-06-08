@@ -76,6 +76,7 @@ column DBIDENTITY format 9999999999999999
 column COMMON_ID format 999999999999.9
 column CREATE_USER_ID format 999999999999.9
 column DATA_SET_ID format 999999999999.9
+column DISCHARGE_DATE_REPLACEMENT_ID format 999999999999
 column DL_ENTRY_ID format 999999999999.9
 column DL_ID format 999999999999.9
 column ED_PARENT_ABSTRACT_CLASS_ID format 999999999999.9
@@ -88,11 +89,16 @@ column FISCAL_PERIODICITY_DEF_ID format 999999999999.9
 column FISCAL_PERIODICITY_ID format 999999999999.9
 column FOLDER_ID format 999999999999.9
 column FOLDER_LIBRARY_ID format 999999999999.9
+column GPS_GROUPER_TYPE_ID format 999999999999
+column GPS_REIMB_SCHEME_ID format 999999999999
+column GPS_REIMB_DEF_GPS_ID format 999999999999.9
 column HCFA_TYPE_ID format 999999999999.9
 column HISTORY_ID format 999999999999.9
 column IM_JOB_RUN_ID format 999999999999.9
 column LAST_CHANGE_USER_ID format 999999999999.9
 column MB_DEFINITION_ID format 999999999999.9
+column MOD_GRP_SCHED_ID format 999999999999.9
+column MOD_REIMB_SCHED_ID format 999999999999.9
 column OPER_PRACT_ROLE_ID format 999999999999.9
 column OWNER_ID format 999999999999.9
 column PAYROLL_PERIODICITY_DEF_ID format 999999999999.9
@@ -111,8 +117,8 @@ column WS_ID format 999999999999.9
 
 ORACLE_SID=pdsprod
 
-#echo "### INFO:   Please enter your customer identifier (e.g. 12345), and then press ENTER"
-#read CUSTOMER_ID
+# echo "### INFO:   Please enter your customer identifier (e.g. 12345), and then press ENTER"
+# read CUSTOMER_ID
 
 
 # ========================================================
@@ -188,7 +194,7 @@ select * from support.dsw_uid;
 SCRIPT
 # trim(dsw_uid)
 DSW_UID=`cat $LOGDIR/test.txt | awk '{$1=$1};1'`
-DSW_UID_FILE="UID_${CUSTOMER_ID}_${DSW_UID}.txt"
+DSW_UID_FILE="UID_${DSW_UID}.txt"
 mv -f $LOGDIR/test.txt $LOGDIR/$DSW_UID_FILE
 
 # ------------------------------------------------------------------------------
@@ -222,10 +228,16 @@ $ORACLE_HOME/bin/sqlplus -s / as sysdba << SCRIPT > $LOGDIR/$TABLENAME.txt
     desc support.SECPRINCIPAL;
     select 'MB_APPLY_HISTORY' from dual;
     desc support.MB_APPLY_HISTORY;
-    select 'extended_data_definition' from dual;
-    desc support.extended_data_definition;
+    select 'EXTENDED_DATA_DEFINITION' from dual;
+    desc support.EXTENDED_DATA_DEFINITION;
     select 'SAFE_DATA_MART' from dual;
     desc support.SAFE_DATA_MART;
+    select 'GROUP_REIMB_DEF_GPS' from dual;
+    desc support.GROUP_REIMB_DEF_GPS;
+    select 'GROUP_REIMB_SCHED' from dual;
+    desc support.GROUP_REIMB_SCHED;
+    select 'GROUP_REIMB_JOB_GPS' from dual;
+    desc support.GROUP_REIMB_JOB_GPS;
 SCRIPT
 ls -l $LOGDIR/${TABLENAME}.txt
 if [ $CHECK_FILE -eq 1 ] ; then 
@@ -446,6 +458,43 @@ if [ $CHECK_FILE -eq 1 ] ; then
 fi
 
 # ------------------------------------------------------------------------------
+TABLENAME="group_reimb_def_gps"
+QUERY="select * from support.${TABLENAME}"
+$ORACLE_HOME/bin/sqlplus -s / as sysdba << SCRIPT > $LOGDIR/$TABLENAME.txt
+    $SQLPLUS_CFG
+    ${QUERY};
+SCRIPT
+ls -l $LOGDIR/${TABLENAME}.txt
+if [ $CHECK_FILE -eq 1 ] ; then 
+    head $LOGDIR/${TABLENAME}.txt
+fi
+# ------------------------------------------------------------------------------
+TABLENAME="group_reimb_sched"
+QUERY="select * from support.${TABLENAME}"
+$ORACLE_HOME/bin/sqlplus -s / as sysdba << SCRIPT > $LOGDIR/$TABLENAME.txt
+    $SQLPLUS_CFG
+    ${QUERY};
+SCRIPT
+ls -l $LOGDIR/${TABLENAME}.txt
+if [ $CHECK_FILE -eq 1 ] ; then 
+    head $LOGDIR/${TABLENAME}.txt
+fi
+# ------------------------------------------------------------------------------
+TABLENAME="group_reimb_job_gps"
+QUERY="select * from support.GROUP_REIMB_JOB_GPS where START_DATE > $DATE_THRESHOLD"
+$ORACLE_HOME/bin/sqlplus -s / as sysdba << SCRIPT > $LOGDIR/$TABLENAME.txt
+    $SQLPLUS_CFG
+    ${QUERY};
+SCRIPT
+ls -l $LOGDIR/${TABLENAME}.txt
+if [ $CHECK_FILE -eq 1 ] ; then 
+    head $LOGDIR/${TABLENAME}.txt
+fi
+
+# DEBUGGING -- exit
+
+
+# ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
@@ -455,7 +504,9 @@ fi
 # ========================================================
 # zip raw data files with removal to devops.zip
 # ========================================================
+
 CUSTOMER_ID=$(cat $LOGDIR/enterprise.txt | cut -d '|' -f 4| cut -c2-9)
+
 if [ $DEBUGGING -eq 1 ] ; then 
     zip ${ZIP_PARAMS} $LOGDIR/devops.zip \
         $LOGDIR/devops_file1.txt \
@@ -481,7 +532,10 @@ else
         $LOGDIR/secprincipal.txt \
         $LOGDIR/mb_apply_history.txt \
         $LOGDIR/extended_data_definition.txt \
-        $LOGDIR/safe_data_mart.txt
+        $LOGDIR/safe_data_mart.txt \
+        $LOGDIR/group_reimb_def_gps.txt \
+        $LOGDIR/group_reimb_sched.txt \
+        $LOGDIR/group_reimb_job_gps.txt
 fi
 
 # ========================================================
