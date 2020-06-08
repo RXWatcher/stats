@@ -111,8 +111,8 @@ column WS_ID format 999999999999.9
 
 ORACLE_SID=pdsprod
 
-echo "### INFO:   Please enter your customer identifier (e.g. 12345), and then press ENTER"
-read CUSTOMER_ID
+#echo "### INFO:   Please enter your customer identifier (e.g. 12345), and then press ENTER"
+#read CUSTOMER_ID
 
 
 # ========================================================
@@ -455,6 +455,7 @@ fi
 # ========================================================
 # zip raw data files with removal to devops.zip
 # ========================================================
+CUSTOMER_ID=cat $LOGDIR/enterprise.txt | cut -d '|' -f 4| cut -c2-9
 if [ $DEBUGGING -eq 1 ] ; then 
     zip ${ZIP_PARAMS} $LOGDIR/devops.zip \
         $LOGDIR/devops_file1.txt \
