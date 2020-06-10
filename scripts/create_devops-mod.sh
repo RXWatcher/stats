@@ -1,4 +1,4 @@
-#! /bin/ksh
+#!/bin/bash
 
 # $DOWNLOADS\create_devops.sh
 
@@ -551,3 +551,31 @@ echo "### INFO:  Please send    '$LOGDIR/devops_${CUSTOMER_ID}.zip'    back to P
 echo "====================================================================================="
 echo "  "
 
+#Main Menu
+OPTION=$(whiptail --title "Transfer Menu" --menu "Choose an option" 20 0 0 \
+"1. SFTP the zip file" "" \
+"2. Email the $(du -sh /apg/devops/*.zip | cut -f1) file." "" 3>&1 1>&2 2>&3)
+
+exitstatus=$?
+if [ $exitstatus = 0 ]; then
+    echo "Your chosen option:" $OPTION
+else
+    echo "You chose neither option. Please manually copy the file."
+        exit
+fi
+
+
+case $OPTION in
+"1. SFTP the zip file")
+   echo "|1|4I+ZaNf4M4AlSPJJFyVvFF3zB3E=|t8ANynJlfjTZN8a0Y2x72hmbnDY= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBK3PFsbTO9uD0368yirYHE73OWpgmiFx99NTOfgk2vt2G04Pzf8lnNtRC71PAol0s43ueSWHc7P/rBgrb6T5wKQ=" >> ~/.ssh/known_hosts
+sftp devops@webnx.wildhare.nl:customers << EOF
+put /apg/devops/*.zip
+exit
+EOF
+  ;;
+"2. Email the $(du -sh /apg/devops/*.zip | cut -f1) file.")
+ #echo "Devops Output from $(hostname) " | mail -s "Devops Output from $(hostname)" jcole@kaufmanhall.com -a /apg/devops/*.zip
+  mailx -a *.zip -s "Devops output from $(hostname)" JSimmons@kaufmanhall.com < /dev/null
+  ;;
+
+esac
